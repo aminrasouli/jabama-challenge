@@ -14,6 +14,8 @@ import {
   LoginUserOutputDto,
 } from '../dto/auth.dto';
 import { TokensService } from './tokens.service';
+import { EventEmitter2 as EventEmitter } from '@nestjs/event-emitter';
+import { NewUserRegistered } from '../event/auth.events';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly hashPasswordService: HashPasswordService,
     private readonly tokensService: TokensService,
+    private eventEmitter: EventEmitter,
   ) {}
 
   async register(registerUserDto: Prisma.UserCreateInput): Promise<void> {
@@ -35,13 +38,21 @@ export class AuthService {
 
     if (isUserExist) throw new BadRequestException('User already exists');
 
-    await this.prismaService.user.create({
+    const user = await this.prismaService.user.create({
       data: {
         name,
         password: await this.hashPasswordService.hash(password),
         email,
       },
     });
+
+    this.eventEmitter.emit(
+      'user.registered',
+      Object.assign(new NewUserRegistered(), {
+        userId: user.id,
+        email,
+      }),
+    );
 
     this.logger.log(`User ${name} with email ${email} registered`);
   }
