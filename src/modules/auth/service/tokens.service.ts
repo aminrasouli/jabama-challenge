@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as moment from 'moment';
 
-type TokenTypeLiteral = 'REFRESH' | 'ACCESS';
+export type TokenTypeLiteral = 'REFRESH' | 'ACCESS';
 
 @Injectable()
 export class TokensService {
@@ -21,15 +21,13 @@ export class TokensService {
     private readonly prismaService: PrismaService,
   ) {}
 
-  async getTokenSecret(token: TokenTypeLiteral): Promise<string> {
+  getTokenSecret(token: TokenTypeLiteral): string {
     const secret = this.configService.get<string>(`${token}_TOKEN_SECRET`);
     if (!secret) throw new InternalServerErrorException('Secret Key Not Found');
     return secret;
   }
 
-  async getTokenExpiration(
-    token: 'REFRESH' | 'ACCESS',
-  ): Promise<string | number> {
+  getTokenExpiration(token: 'REFRESH' | 'ACCESS'): string | number {
     const expiration = this.configService.get<number | string>(
       `${token}_TOKEN_EXPIRATION`,
     );
@@ -42,8 +40,8 @@ export class TokensService {
     secret: string;
     expiresIn: string | number;
   }> {
-    const secret = await this.getTokenSecret(token);
-    const expiration = await this.getTokenExpiration(token);
+    const secret = this.getTokenSecret(token);
+    const expiration = this.getTokenExpiration(token);
     return { secret, expiresIn: expiration };
   }
 
@@ -75,11 +73,17 @@ export class TokensService {
       secret,
       expiresIn,
     });
+    const expired = (expiresIn as string).split('');
     await this.prismaService.token.create({
       data: {
         token,
         type,
-        expiresAt: moment().add(expiresIn).toISOString(),
+        expiresAt: moment()
+          .add(
+            expired[0] as moment.DurationInputArg1,
+            expired[1] as moment.unitOfTime.DurationConstructor,
+          )
+          .toISOString(),
         user: {
           connect: { id: userId },
         },
@@ -103,7 +107,7 @@ export class TokensService {
     refreshToken: string,
   ): Promise<string> {
     const type: TokenTypeLiteral = 'REFRESH';
-    const secret = await this.getTokenSecret(type);
+    const secret = this.getTokenSecret(type);
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken, {
         secret,

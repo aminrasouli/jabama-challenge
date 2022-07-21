@@ -1,4 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import {
   GetNewAccessTokenInputDto,
@@ -7,12 +14,20 @@ import {
   LoginUserOutputDto,
   RegisterUserInputDto,
 } from '../dto/auth.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../guard/jwt.guard';
 
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('/')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async getPayload(@Request() req): Promise<any> {
+    return req.user;
+  }
 
   @Post('register')
   async register(@Body() registerUserDto: RegisterUserInputDto): Promise<void> {
