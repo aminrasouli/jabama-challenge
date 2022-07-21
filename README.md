@@ -18,6 +18,7 @@ $ npm install
 ```
 
 ## Running the app and database using Docker Compose
+copy .env.example to .env and change the values to match your environment
 
 ```bash
 docker-compose up --build
@@ -32,6 +33,12 @@ $ npm run start:dev
 
 # production mode
 $ npm run start:prod
+```
+
+## Api Document
+
+```bash
+localhost:3000/api/docs
 ```
 
 ## Test
