@@ -2,17 +2,23 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
+import * as moment from 'moment';
 
 type TokenTypeLiteral = 'REFRESH' | 'ACCESS';
 
 @Injectable()
 export class TokensService {
+  private logger: Logger = new Logger('TokensService');
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly prismaService: PrismaService,
   ) {}
 
   async getTokenSecret(token: TokenTypeLiteral): Promise<string> {
@@ -49,10 +55,12 @@ export class TokensService {
       userId,
       email,
     };
-    return this.jwtService.signAsync(payload, {
+    const token = this.jwtService.signAsync(payload, {
       secret,
       expiresIn,
     });
+    this.logger.log(`Access Token Created for user ${email}`);
+    return token;
   }
 
   async createRefreshToken(userId: number, email: string): Promise<string> {
@@ -63,10 +71,22 @@ export class TokensService {
       userId,
       email,
     };
-    return this.jwtService.signAsync(payload, {
+    const token = await this.jwtService.signAsync(payload, {
       secret,
       expiresIn,
     });
+    await this.prismaService.token.create({
+      data: {
+        token,
+        type,
+        expiresAt: moment().add(expiresIn).toISOString(),
+        user: {
+          connect: { id: userId },
+        },
+      },
+    });
+    this.logger.log(`Refresh Token Created for user ${email}`);
+    return token;
   }
 
   async createAccessTokenAndRefreshToken(
@@ -82,12 +102,19 @@ export class TokensService {
   async createAccessTokenFromRefreshToken(
     refreshToken: string,
   ): Promise<string> {
-    const secret = await this.getTokenSecret('REFRESH');
+    const type: TokenTypeLiteral = 'REFRESH';
+    const secret = await this.getTokenSecret(type);
     try {
       const payload = await this.jwtService.verifyAsync(refreshToken, {
         secret,
       });
-      console.log(payload);
+      const isTokenDeactivated = !(
+        await this.prismaService.token.findUnique({
+          where: { token: refreshToken },
+        })
+      ).isActive;
+      if (isTokenDeactivated)
+        throw new BadRequestException('Refresh Token is Deactivated');
       const { userId, email } = payload;
       return this.createAccessToken(userId, email);
     } catch (error) {

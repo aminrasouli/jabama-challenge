@@ -12,7 +12,7 @@ import {
   GetNewAccessTokenOutputDto,
   LoginUserInputDto,
   LoginUserOutputDto,
-} from '../auth.dto';
+} from '../dto/auth.dto';
 import { TokensService } from './tokens.service';
 
 @Injectable()
@@ -69,13 +69,15 @@ export class AuthService {
         message: 'Password is Incorrect',
       });
 
-    // FIXME: check is user activated
-    // if (!isUserActivated) {
-    //   throw new BadRequestException({
-    //     error: 'pending',
-    //     message: 'User is still pending. Try to activate your account with confirmation email',
-    //   });
-    // }
+    const isUserActivated = Boolean(user?.emailVerifiedAt);
+
+    if (!isUserActivated) {
+      throw new BadRequestException({
+        error: 'pending',
+        message:
+          'User is still pending. Try to activate your account with confirmation email',
+      });
+    }
 
     return this.tokensService.createAccessTokenAndRefreshToken(
       user.id,

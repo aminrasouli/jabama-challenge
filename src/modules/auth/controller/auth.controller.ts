@@ -6,7 +6,7 @@ import {
   LoginUserInputDto,
   LoginUserOutputDto,
   RegisterUserInputDto,
-} from '../auth.dto';
+} from '../dto/auth.dto';
 import { ApiTags } from '@nestjs/swagger';
 
 @Controller('auth')
