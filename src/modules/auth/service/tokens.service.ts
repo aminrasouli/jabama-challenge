@@ -8,8 +8,11 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as moment from 'moment';
+import { v4 as uuidv4 } from 'uuid';
+import { TokenType } from '@prisma/client';
 
-export type TokenTypeLiteral = 'REFRESH' | 'ACCESS';
+export type TokenTypeLiteral = 'REFRESH' | 'ACCESS' | 'EMAIL_VERIFICATION';
+export type JwtTokenTypeLiteral = Omit<TokenTypeLiteral, 'EMAIL_VERIFICATION'>;
 
 @Injectable()
 export class TokensService {
@@ -21,13 +24,13 @@ export class TokensService {
     private readonly prismaService: PrismaService,
   ) {}
 
-  getTokenSecret(token: TokenTypeLiteral): string {
+  getTokenSecret(token: JwtTokenTypeLiteral): string {
     const secret = this.configService.get<string>(`${token}_TOKEN_SECRET`);
     if (!secret) throw new InternalServerErrorException('Secret Key Not Found');
     return secret;
   }
 
-  getTokenExpiration(token: 'REFRESH' | 'ACCESS'): string | number {
+  getTokenExpiration(token: JwtTokenTypeLiteral): string | number {
     const expiration = this.configService.get<number | string>(
       `${token}_TOKEN_EXPIRATION`,
     );
@@ -36,7 +39,7 @@ export class TokensService {
     return expiration;
   }
 
-  async getTokenConfig(token: TokenTypeLiteral): Promise<{
+  async getTokenConfig(token: JwtTokenTypeLiteral): Promise<{
     secret: string;
     expiresIn: string | number;
   }> {
@@ -46,7 +49,7 @@ export class TokensService {
   }
 
   async createAccessToken(userId: number, email: string): Promise<string> {
-    const type: TokenTypeLiteral = 'ACCESS';
+    const type: JwtTokenTypeLiteral = 'ACCESS';
     const { secret, expiresIn } = await this.getTokenConfig(type);
     const payload = {
       type,
@@ -62,7 +65,7 @@ export class TokensService {
   }
 
   async createRefreshToken(userId: number, email: string): Promise<string> {
-    const type: TokenTypeLiteral = 'REFRESH';
+    const type: JwtTokenTypeLiteral = 'REFRESH';
     const { secret, expiresIn } = await this.getTokenConfig(type);
     const payload = {
       type,
@@ -76,8 +79,8 @@ export class TokensService {
     const expired = (expiresIn as string).split('');
     await this.prismaService.token.create({
       data: {
+        type: type as TokenType,
         token,
-        type,
         expiresAt: moment()
           .add(
             expired[0] as moment.DurationInputArg1,
@@ -124,5 +127,54 @@ export class TokensService {
     } catch (error) {
       throw new BadRequestException('Invalid Refresh Token');
     }
+  }
+
+  async createEmailVerificationToken(
+    userId: number,
+    email: string,
+  ): Promise<string> {
+    const token = uuidv4() as string;
+    await this.prismaService.token.create({
+      data: {
+        type: 'EMAIL_VERIFICATION',
+        token,
+        expiresAt: moment().add('7', 'days').toISOString(),
+        user: { connect: { id: userId } },
+      },
+    });
+    this.logger.log(`Email Verification Token Created for user ${email}`);
+    return token;
+  }
+
+  async validateEmailVerificationToken(token: string): Promise<boolean> {
+    const type: TokenTypeLiteral = 'EMAIL_VERIFICATION';
+    const tokenRecord = await this.prismaService.token.findFirst({
+      where: {
+        type,
+        token,
+      },
+      include: { user: true },
+    });
+
+    if (!tokenRecord) throw new BadRequestException('Invalid Token');
+    if (moment().isAfter(tokenRecord.expiresAt))
+      throw new BadRequestException('Token Expired');
+    if (!tokenRecord.isActive)
+      throw new BadRequestException('Token is Deactivated');
+    if (tokenRecord.user.emailVerifiedAt)
+      throw new BadRequestException('Email Already Verified');
+
+    await Promise.all([
+      this.prismaService.token.update({
+        where: { id: tokenRecord.id },
+        data: { isActive: false },
+      }),
+      this.prismaService.user.update({
+        where: { id: tokenRecord.user.id },
+        data: { emailVerifiedAt: moment().toISOString() },
+      }),
+    ]);
+
+    return true;
   }
 }

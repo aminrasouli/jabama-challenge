@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { HashPasswordService } from './hash-password.service';
 import {
+  ConfirmMailInputDto,
   GetNewAccessTokenInputDto,
   GetNewAccessTokenOutputDto,
   LoginUserInputDto,
@@ -51,6 +52,8 @@ export class AuthService {
       Object.assign(new NewUserRegistered(), {
         userId: user.id,
         email,
+        confirmationTokenEmail:
+          await this.tokensService.createEmailVerificationToken(user.id, email),
       }),
     );
 
@@ -105,5 +108,12 @@ export class AuthService {
         refreshToken,
       ),
     };
+  }
+
+  async validateConfirmMailToken(
+    confirmMailInputDto: ConfirmMailInputDto,
+  ): Promise<void> {
+    const { token } = confirmMailInputDto;
+    await this.tokensService.validateEmailVerificationToken(token);
   }
 }

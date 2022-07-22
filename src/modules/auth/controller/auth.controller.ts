@@ -2,12 +2,14 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import {
+  ConfirmMailInputDto,
   GetNewAccessTokenInputDto,
   GetNewAccessTokenOutputDto,
   LoginUserInputDto,
@@ -47,5 +49,12 @@ export class AuthController {
   ): Promise<GetNewAccessTokenOutputDto> {
     console.log(getNewAccessTokenInputDto);
     return this.authService.refresh(getNewAccessTokenInputDto);
+  }
+
+  @Get('confirm-mail/:token')
+  async confirmMail(
+    @Param() confirmMailInputDto: ConfirmMailInputDto,
+  ): Promise<void> {
+    await this.authService.validateConfirmMailToken(confirmMailInputDto);
   }
 }

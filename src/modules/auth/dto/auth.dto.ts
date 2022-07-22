@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsString, IsUUID, Matches, MinLength } from 'class-validator';
 
 export class RegisterUserInputDto {
   @Matches(/^[a-zA-Z\s]+$/, {
@@ -34,4 +34,9 @@ export class LoginUserOutputDto {
 
 export class GetNewAccessTokenOutputDto {
   accessToken: string;
+}
+
+export class ConfirmMailInputDto {
+  @IsUUID()
+  token: string;
 }

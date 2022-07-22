@@ -5,6 +5,9 @@
   "compilerOptions": {
     "plugins": [
       "@nestjs/swagger"
+    ],
+    "assets": [
+      "modules/mail/templates/**/*"
     ]
   }
 }
