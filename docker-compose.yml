@@ -3,12 +3,13 @@ version: "3.0"
 services:
   app:
     build: .
-    command: npm run start:prod
+    command: npm run start:prod:full
     ports:
       - ${PORT}:${PORT}
     depends_on:
       - db
-    restart: always
+      - redis
+    restart: on-failure
   db:
     image: postgres:latest
     volumes:

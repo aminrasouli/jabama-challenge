@@ -83,6 +83,8 @@ export class AuthService {
       });
     }
 
+    this.logger.log(`User ${user.name} with email ${email} logged in`);
+
     return this.tokensService.createAccessTokenAndRefreshToken(user.id, user.email);
   }
 

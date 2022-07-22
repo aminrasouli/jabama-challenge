@@ -109,6 +109,7 @@ export class TokensService {
       ).isActive;
       if (isTokenDeactivated) throw new BadRequestException('Refresh Token is Deactivated');
       const { userId, email } = payload;
+      this.logger.log(`Refresh Token Validated for user ${email} and Access Token was created`);
       return this.createAccessToken(userId, email);
     } catch (error) {
       throw new BadRequestException('Invalid Refresh Token');
@@ -154,7 +155,7 @@ export class TokensService {
         data: { emailVerifiedAt: moment().toISOString() },
       }),
     ]);
-
+    this.logger.log(`Email Verification Token Validated for user ${tokenRecord.user.email}`);
     return true;
   }
 }
