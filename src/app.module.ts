@@ -28,7 +28,7 @@ import { BullModule } from '@nestjs/bull';
         MAIL_USERNAME: Joi.string().required(),
         MAIL_PASSWORD: Joi.string().required(),
         SENTRY_ENABLED: Joi.boolean(),
-        SENTRY_DSN: Joi.string().optional(),
+        SENTRY_DSN: Joi.optional(),
         LOG_FILE_ENABLED: Joi.boolean(),
         LOG_FILE: Joi.string(),
       }),
