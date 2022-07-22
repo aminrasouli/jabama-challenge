@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { HashPasswordService } from './hash-password.service';
@@ -52,8 +47,7 @@ export class AuthService {
       Object.assign(new NewUserRegistered(), {
         userId: user.id,
         email,
-        confirmationTokenEmail:
-          await this.tokensService.createEmailVerificationToken(user.id, email),
+        confirmationTokenEmail: await this.tokensService.createEmailVerificationToken(user.id, email),
       }),
     );
 
@@ -72,10 +66,7 @@ export class AuthService {
         message: 'Email Not Found',
       });
 
-    const isPasswordValid = await this.hashPasswordService.compare(
-      password,
-      user.password,
-    );
+    const isPasswordValid = await this.hashPasswordService.compare(password, user.password);
 
     if (!isPasswordValid)
       throw new BadRequestException({
@@ -88,31 +79,21 @@ export class AuthService {
     if (!isUserActivated) {
       throw new BadRequestException({
         error: 'pending',
-        message:
-          'User is still pending. Try to activate your account with confirmation email',
+        message: 'User is still pending. Try to activate your account with confirmation email',
       });
     }
 
-    return this.tokensService.createAccessTokenAndRefreshToken(
-      user.id,
-      user.email,
-    );
+    return this.tokensService.createAccessTokenAndRefreshToken(user.id, user.email);
   }
 
-  async refresh(
-    getNewAccessTokenInputDto: GetNewAccessTokenInputDto,
-  ): Promise<GetNewAccessTokenOutputDto> {
+  async refresh(getNewAccessTokenInputDto: GetNewAccessTokenInputDto): Promise<GetNewAccessTokenOutputDto> {
     const { refreshToken } = getNewAccessTokenInputDto;
     return {
-      accessToken: await this.tokensService.createAccessTokenFromRefreshToken(
-        refreshToken,
-      ),
+      accessToken: await this.tokensService.createAccessTokenFromRefreshToken(refreshToken),
     };
   }
 
-  async validateConfirmMailToken(
-    confirmMailInputDto: ConfirmMailInputDto,
-  ): Promise<void> {
+  async validateConfirmMailToken(confirmMailInputDto: ConfirmMailInputDto): Promise<void> {
     const { token } = confirmMailInputDto;
     await this.tokensService.validateEmailVerificationToken(token);
   }

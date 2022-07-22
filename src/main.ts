@@ -2,18 +2,17 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import {
-  ClassSerializerInterceptor,
-  Logger,
-  ValidationPipe,
-} from '@nestjs/common';
-import {
-  utilities as nestWinstonModuleUtilities,
-  WinstonModule,
-} from 'nest-winston';
+import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
+import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import { default as Sentry } from 'winston-transport-sentry-node';
 
 async function bootstrap() {
+  const configService: ConfigService = new ConfigService();
+
+  const isSentryEnabled = configService.get('SENTRY_ENABLED') === 'true';
+  const isLoggedFileEnabled = configService.get('LOG_FILE_ENABLED') === 'true';
+
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({
       transports: [
@@ -26,13 +25,29 @@ async function bootstrap() {
             }),
           ),
         }),
-        new winston.transports.File({ filename: 'app.log' }),
+        ...(isLoggedFileEnabled
+          ? [
+              new winston.transports.File({
+                filename: configService.get('LOG_FILE'),
+                format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+              }),
+            ]
+          : []),
+        ...(isSentryEnabled
+          ? [
+              new Sentry({
+                sentry: {
+                  dsn: configService.get('SENTRY_DSN'),
+                },
+                level: 'error',
+              }),
+            ]
+          : []),
       ],
     }),
   });
 
   const logger = new Logger('Bootstrap');
-  const env = app.get<ConfigService>(ConfigService);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -46,8 +61,6 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  const port = env.get<number>('PORT') || 3000;
-
   app.setGlobalPrefix('api');
 
   const config = new DocumentBuilder()
@@ -60,8 +73,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  const port = configService.get<number>('PORT') || 3000;
   await app.listen(Number(port));
-
   logger.log(`App listening on port ${port}`);
 }
 

@@ -9,13 +9,7 @@ import { AuthListeners } from './event/auth.listeners';
 
 @Module({
   imports: [JwtModule.register({})],
-  providers: [
-    AuthService,
-    HashPasswordService,
-    TokensService,
-    JwtStrategy,
-    AuthListeners,
-  ],
+  providers: [AuthService, HashPasswordService, TokensService, JwtStrategy, AuthListeners],
   controllers: [AuthController],
 })
 export class AuthModule {}

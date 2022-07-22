@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -31,11 +26,8 @@ export class TokensService {
   }
 
   getTokenExpiration(token: JwtTokenTypeLiteral): string | number {
-    const expiration = this.configService.get<number | string>(
-      `${token}_TOKEN_EXPIRATION`,
-    );
-    if (!expiration)
-      throw new InternalServerErrorException('Token Expiration Not Found');
+    const expiration = this.configService.get<number | string>(`${token}_TOKEN_EXPIRATION`);
+    if (!expiration) throw new InternalServerErrorException('Token Expiration Not Found');
     return expiration;
   }
 
@@ -82,10 +74,7 @@ export class TokensService {
         type: type as TokenType,
         token,
         expiresAt: moment()
-          .add(
-            expired[0] as moment.DurationInputArg1,
-            expired[1] as moment.unitOfTime.DurationConstructor,
-          )
+          .add(expired[0] as moment.DurationInputArg1, expired[1] as moment.unitOfTime.DurationConstructor)
           .toISOString(),
         user: {
           connect: { id: userId },
@@ -106,9 +95,7 @@ export class TokensService {
     };
   }
 
-  async createAccessTokenFromRefreshToken(
-    refreshToken: string,
-  ): Promise<string> {
+  async createAccessTokenFromRefreshToken(refreshToken: string): Promise<string> {
     const type: TokenTypeLiteral = 'REFRESH';
     const secret = this.getTokenSecret(type);
     try {
@@ -120,8 +107,7 @@ export class TokensService {
           where: { token: refreshToken },
         })
       ).isActive;
-      if (isTokenDeactivated)
-        throw new BadRequestException('Refresh Token is Deactivated');
+      if (isTokenDeactivated) throw new BadRequestException('Refresh Token is Deactivated');
       const { userId, email } = payload;
       return this.createAccessToken(userId, email);
     } catch (error) {
@@ -129,10 +115,7 @@ export class TokensService {
     }
   }
 
-  async createEmailVerificationToken(
-    userId: number,
-    email: string,
-  ): Promise<string> {
+  async createEmailVerificationToken(userId: number, email: string): Promise<string> {
     const token = uuidv4() as string;
     await this.prismaService.token.create({
       data: {
@@ -157,12 +140,9 @@ export class TokensService {
     });
 
     if (!tokenRecord) throw new BadRequestException('Invalid Token');
-    if (moment().isAfter(tokenRecord.expiresAt))
-      throw new BadRequestException('Token Expired');
-    if (!tokenRecord.isActive)
-      throw new BadRequestException('Token is Deactivated');
-    if (tokenRecord.user.emailVerifiedAt)
-      throw new BadRequestException('Email Already Verified');
+    if (moment().isAfter(tokenRecord.expiresAt)) throw new BadRequestException('Token Expired');
+    if (!tokenRecord.isActive) throw new BadRequestException('Token is Deactivated');
+    if (tokenRecord.user.emailVerifiedAt) throw new BadRequestException('Email Already Verified');
 
     await Promise.all([
       this.prismaService.token.update({

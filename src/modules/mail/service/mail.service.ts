@@ -15,9 +15,7 @@ export class MailService {
         token,
       });
     } catch (error) {
-      this.logger.error(
-        `Error during queueing confirmation email to user ${email}`,
-      );
+      this.logger.error(`Error during queueing confirmation email to user ${email}`);
     }
   }
 }

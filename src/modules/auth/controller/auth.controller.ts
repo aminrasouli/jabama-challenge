@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import {
   ConfirmMailInputDto,
@@ -37,24 +29,18 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(
-    @Body() loginUserDto: LoginUserInputDto,
-  ): Promise<LoginUserOutputDto> {
+  async login(@Body() loginUserDto: LoginUserInputDto): Promise<LoginUserOutputDto> {
     return this.authService.login(loginUserDto);
   }
 
   @Post('refresh')
-  async refresh(
-    @Body() getNewAccessTokenInputDto: GetNewAccessTokenInputDto,
-  ): Promise<GetNewAccessTokenOutputDto> {
+  async refresh(@Body() getNewAccessTokenInputDto: GetNewAccessTokenInputDto): Promise<GetNewAccessTokenOutputDto> {
     console.log(getNewAccessTokenInputDto);
     return this.authService.refresh(getNewAccessTokenInputDto);
   }
 
   @Get('confirm-mail/:token')
-  async confirmMail(
-    @Param() confirmMailInputDto: ConfirmMailInputDto,
-  ): Promise<void> {
+  async confirmMail(@Param() confirmMailInputDto: ConfirmMailInputDto): Promise<void> {
     await this.authService.validateConfirmMailToken(confirmMailInputDto);
   }
 }
