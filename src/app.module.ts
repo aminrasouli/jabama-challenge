@@ -15,7 +15,7 @@ import { BullModule } from '@nestjs/bull';
       isGlobal: true,
       validationSchema: Joi.object({
         APP_URL: Joi.string().required(),
-        PORT: Joi.number(),
+        PORT: Joi.number().optional(),
         DATABASE_URL: Joi.string(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
@@ -28,7 +28,7 @@ import { BullModule } from '@nestjs/bull';
         MAIL_USERNAME: Joi.string().required(),
         MAIL_PASSWORD: Joi.string().required(),
         SENTRY_ENABLED: Joi.boolean(),
-        SENTRY_DSN: Joi.string(),
+        SENTRY_DSN: Joi.string().optional(),
         LOG_FILE_ENABLED: Joi.boolean(),
         LOG_FILE: Joi.string(),
       }),
