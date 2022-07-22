@@ -11,6 +11,10 @@ import { MailService } from './service/mail.service';
   imports: [
     BullModule.registerQueue({
       name: 'MailQueue',
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: 10000,
+      },
     }),
     MailerModule.forRootAsync({
       inject: [ConfigService],

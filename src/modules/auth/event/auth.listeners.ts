@@ -5,7 +5,7 @@ import { MailService } from '../../mail/service/mail.service';
 
 @Injectable()
 export class AuthListeners {
-  private logger: Logger = new Logger('AuthListeners');
+  private logger: Logger = new Logger(AuthListeners.name);
 
   constructor(private readonly mailService: MailService) {}
 

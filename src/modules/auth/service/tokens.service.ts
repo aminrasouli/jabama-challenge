@@ -16,7 +16,7 @@ export type JwtTokenTypeLiteral = Omit<TokenTypeLiteral, 'EMAIL_VERIFICATION'>;
 
 @Injectable()
 export class TokensService {
-  private logger: Logger = new Logger('TokensService');
+  private logger: Logger = new Logger(TokensService.name);
 
   constructor(
     private readonly jwtService: JwtService,

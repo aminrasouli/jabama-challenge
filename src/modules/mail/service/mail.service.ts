@@ -4,7 +4,7 @@ import { Queue } from 'bull';
 
 @Injectable()
 export class MailService {
-  private logger: Logger = new Logger('MailService');
+  private logger: Logger = new Logger(MailService.name);
 
   constructor(@InjectQueue('MailQueue') private mailQueue: Queue) {}
 

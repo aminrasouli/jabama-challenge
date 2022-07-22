@@ -17,7 +17,7 @@ interface ConfirmationMailJob {
 
 @Processor('MailQueue')
 export class MailProcessor {
-  private readonly logger: Logger = new Logger('MailProcessor');
+  private logger: Logger = new Logger(MailProcessor.name);
 
   constructor(
     private readonly configService: ConfigService,
@@ -26,20 +26,22 @@ export class MailProcessor {
 
   @OnQueueActive()
   onActive(job: Job<ConfirmationMailJob>) {
-    this.logger.debug(
-      `Processing job ${job.id} of type ${job.name}. Data: ${JSON.stringify(
-        job.data,
-      )}`,
+    this.logger.log(
+      `Processing sending mail ${job.id} of type ${
+        job.name
+      }. data: ${JSON.stringify(job.data)}`,
     );
   }
 
   @OnQueueCompleted()
-  onComplete(job: Job<ConfirmationMailJob>, result: any) {
-    this.logger.debug(`Completed sending mail ${job.id} of type ${job.name}.`);
+  async onComplete(job: Job<ConfirmationMailJob>) {
+    await job.remove();
+    this.logger.log(`Completed sending mail ${job.id} of type ${job.name}.`);
   }
 
   @OnQueueFailed()
-  onError(job: Job<ConfirmationMailJob>, error: any) {
+  async onError(job: Job<ConfirmationMailJob>, error: any) {
+    await job.retry();
     this.logger.error(
       `Failed sending mail ${job.id} of type ${job.name}: ${error.message}`,
       error.stack,

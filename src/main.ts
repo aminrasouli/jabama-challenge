@@ -7,11 +7,32 @@ import {
   Logger,
   ValidationPipe,
 } from '@nestjs/common';
+import {
+  utilities as nestWinstonModuleUtilities,
+  WinstonModule,
+} from 'nest-winston';
+import * as winston from 'winston';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+  const app = await NestFactory.create(AppModule, {
+    logger: WinstonModule.createLogger({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.ms(),
+            nestWinstonModuleUtilities.format.nestLike('App', {
+              colors: true,
+            }),
+          ),
+        }),
+        new winston.transports.File({ filename: 'app.log' }),
+      ],
+    }),
+  });
 
-  const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
+  const env = app.get<ConfigService>(ConfigService);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -25,7 +46,6 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  const env = app.get<ConfigService>(ConfigService);
   const port = env.get<number>('PORT') || 3000;
 
   app.setGlobalPrefix('api');

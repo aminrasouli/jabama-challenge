@@ -20,7 +20,7 @@ import { NewUserRegistered } from '../event/auth.events';
 
 @Injectable()
 export class AuthService {
-  private logger: Logger = new Logger('AuthService');
+  private logger: Logger = new Logger(AuthService.name);
 
   constructor(
     private readonly prismaService: PrismaService,
